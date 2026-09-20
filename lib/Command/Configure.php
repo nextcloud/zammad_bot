@@ -40,7 +40,9 @@ class Configure extends Command {
 			->addOption('talk-bot-secret', null, InputOption::VALUE_OPTIONAL, 'Secret printed by occ talk:bot:create, omit the value to be prompted', false)
 			->addOption('talk-base-url', null, InputOption::VALUE_REQUIRED, 'Override the URL used to reach this server\'s own Talk API')
 			->addOption('verify-tls', null, InputOption::VALUE_REQUIRED, 'Whether to verify TLS when calling the local Talk API (true/false)')
-			->addOption('retention-days', null, InputOption::VALUE_REQUIRED, 'How long a ticket stays deduplicated, in days');
+			->addOption('retention-days', null, InputOption::VALUE_REQUIRED, 'How long a ticket stays deduplicated, in days')
+			->addOption('only-unassigned', null, InputOption::VALUE_REQUIRED, 'Only announce tickets nobody has taken yet (true/false)')
+			->addOption('escalation-severities', null, InputOption::VALUE_REQUIRED, 'Comma separated severities that mention the team lead, e.g. sev1,sev2');
 	}
 
 	#[\Override]
@@ -109,6 +111,20 @@ class Configure extends Command {
 			$changed = true;
 		}
 
+		$onlyUnassigned = $input->getOption('only-unassigned');
+		if ($onlyUnassigned !== null) {
+			$this->config->setOnlyUnassigned(filter_var($onlyUnassigned, FILTER_VALIDATE_BOOLEAN));
+			$output->writeln('<info>Owner filter saved</info>');
+			$changed = true;
+		}
+
+		$severities = $input->getOption('escalation-severities');
+		if ($severities !== null) {
+			$this->config->setEscalationSeverities(array_filter(array_map('trim', explode(',', (string)$severities))));
+			$output->writeln('<info>Escalation severities saved</info>');
+			$changed = true;
+		}
+
 		$retentionDays = $input->getOption('retention-days');
 		if ($retentionDays !== null) {
 			$this->config->setRetentionDays((int)$retentionDays);
@@ -156,5 +172,8 @@ class Configure extends Command {
 		$output->writeln('Verify TLS:      ' . ($this->config->verifyTls() ? 'yes' : 'no'));
 		$output->writeln('Retention:       ' . $this->config->getRetentionDays() . ' days');
 		$output->writeln('Mapped tags:     ' . (count($this->config->getTagRooms()) ?: 'none'));
+		$output->writeln('Only unassigned: ' . ($this->config->onlyUnassigned() ? 'yes' : 'no, every ticket is announced'));
+		$output->writeln('Escalation:      ' . (implode(', ', $this->config->getEscalationSeverities()) ?: 'disabled')
+			. ' (' . (count($this->config->getTagLeads()) ?: 'no') . ' lead(s) configured)');
 	}
 }

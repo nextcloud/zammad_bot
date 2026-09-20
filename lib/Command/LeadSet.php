@@ -10,11 +10,11 @@ namespace OCA\ZammadBot\Command;
 
 use OCA\ZammadBot\Service\Config;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class TagList extends Command {
+class LeadSet extends Command {
 	public function __construct(
 		protected Config $config,
 	) {
@@ -23,25 +23,23 @@ class TagList extends Command {
 
 	#[\Override]
 	protected function configure(): void {
-		$this->setName('zammad_bot:tag:list')
-			->setDescription('List the configured Zammad tag to Talk conversation mappings');
+		$this->setName('zammad_bot:lead:set')
+			->setDescription('Set the lead mentioned when a severe ticket carries this tag')
+			->addArgument('tag', InputArgument::REQUIRED, 'The Zammad tag, e.g. talk')
+			->addArgument('lead', InputArgument::REQUIRED, 'A Nextcloud user id, or group/<id> to mention a whole group');
 	}
 
 	#[\Override]
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$map = $this->config->getTagRooms();
-		if ($map === []) {
-			$output->writeln('<comment>No mappings configured, use occ zammad_bot:tag:set</comment>');
-			return 0;
+		$lead = (string)$input->getArgument('lead');
+		try {
+			$this->config->setTagLead((string)$input->getArgument('tag'), $lead);
+		} catch (\InvalidArgumentException $e) {
+			$output->writeln('<error>' . $e->getMessage() . '</error>');
+			return 1;
 		}
 
-		$table = new Table($output);
-		$leads = $this->config->getTagLeads();
-		$table->setHeaders(['Zammad tag', 'Conversation token', 'Lead mentioned when severe']);
-		foreach ($map as $tag => $token) {
-			$table->addRow([$tag, $token, $leads[$tag] ?? '-']);
-		}
-		$table->render();
+		$output->writeln('<info>Lead saved, they will be mentioned as @"' . $lead . '"</info>');
 		$output->writeln('Mentioned for severities: ' . implode(', ', $this->config->getEscalationSeverities()));
 		return 0;
 	}

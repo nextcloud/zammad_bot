@@ -36,21 +36,50 @@ class MessageFormatter {
 		$headline = $link !== ''
 			? '🎫 **[' . $label . '](' . $link . ')**'
 			: '🎫 **' . $label . '**';
+		$headline .= ' — `' . $this->code($matchedTag) . '`';
 
 		$details = [];
 		foreach ([
-			'Customer' => $ticket->customer,
+			'Requester' => $ticket->customer,
 			'Group' => $ticket->group,
 			'State' => $ticket->state,
 			'Priority' => $ticket->priority,
+			'Severity' => $ticket->severity,
 		] as $caption => $value) {
 			if (trim($value) !== '') {
 				$details[] = $caption . ': ' . $this->escape(trim($value));
 			}
 		}
 
-		$message = $details === [] ? $headline : $headline . "\n" . implode("\n", $details);
-		return $this->truncate($message, self::MAX_MESSAGE_LENGTH);
+		$lines = [$headline];
+		if ($details !== []) {
+			$lines[] = implode(' · ', $details);
+		}
+		if (($escalation = $this->escalation($ticket, $matchedTag)) !== '') {
+			$lines[] = $escalation;
+		}
+
+		return $this->truncate(implode("\n", $lines), self::MAX_MESSAGE_LENGTH);
+	}
+
+	/**
+	 * Mentions the team lead when the ticket is severe enough to warrant it.
+	 *
+	 * The mention is neither escaped nor put in a code span, core's mention
+	 * parser ignores it in both cases and nobody would be notified.
+	 */
+	protected function escalation(Ticket $ticket, string $matchedTag): string {
+		$severity = mb_strtolower(trim($ticket->severity));
+		if ($severity === '' || !in_array($severity, $this->config->getEscalationSeverities(), true)) {
+			return '';
+		}
+
+		$lead = trim($this->config->getTagLead($matchedTag));
+		if ($lead === '' || !Config::isMentionable($lead)) {
+			return '';
+		}
+
+		return '❗ **' . $this->escape(trim($ticket->severity)) . '** — @"' . $lead . '"';
 	}
 
 	protected function ticketUrl(Ticket $ticket): string {

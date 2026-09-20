@@ -94,21 +94,21 @@ class PayloadParserTest extends TestCase {
 			'ticket' => [
 				'id' => 105825,
 				'customer' => [
-					'firstname' => 'Joas',
-					'lastname' => 'Schilling',
-					'login' => 'joas@nextcloud.com',
-					'email' => 'joas@nextcloud.com',
+					'firstname' => 'Ada',
+					'lastname' => 'Lovelace',
+					'login' => 'ada@example.com',
+					'email' => 'ada@example.com',
 				],
 			],
 		], JSON_THROW_ON_ERROR));
-		$this->assertSame('Joas Schilling', $ticket->customer);
+		$this->assertSame('Ada Lovelace', $ticket->customer);
 	}
 
 	public function testUserWithOnlyAFirstName(): void {
 		$ticket = $this->parser->parse(json_encode([
-			'ticket' => ['id' => 1, 'customer' => ['firstname' => 'Joas', 'login' => 'joas@nextcloud.com']],
+			'ticket' => ['id' => 1, 'customer' => ['firstname' => 'Ada', 'login' => 'ada@example.com']],
 		], JSON_THROW_ON_ERROR));
-		$this->assertSame('Joas', $ticket->customer);
+		$this->assertSame('Ada', $ticket->customer);
 	}
 
 	/**
@@ -238,5 +238,62 @@ class PayloadParserTest extends TestCase {
 	public function testInvalidPayloads(string $body): void {
 		$this->expectException(InvalidPayloadException::class);
 		$this->parser->parse($body);
+	}
+
+	public function testSeverityIsRead(): void {
+		$ticket = $this->parser->parse('{"ticket":{"id":1,"severity":"sev1"}}');
+		$this->assertSame('sev1', $ticket->severity);
+	}
+
+	/**
+	 * A severity Zammad failed to render must not be mistaken for a real one,
+	 * or every ticket would look like an escalation.
+	 */
+	public function testUnresolvedSeverityIsDiscardedAndReported(): void {
+		$ticket = $this->parser->parse('{"ticket":{"id":1,"severity":"#{ticket.severity / no such method}"}}');
+		$this->assertSame('', $ticket->severity);
+		$this->assertContains('#{ticket.severity / no such method}', $ticket->unresolved);
+	}
+
+	public function testMissingSeverityIsEmpty(): void {
+		$this->assertSame('', $this->parser->parse('{"ticket":{"id":1}}')->severity);
+	}
+
+	public static function dataOwner(): array {
+		return [
+			'placeholder id'   => [['owner_id' => 1, 'owner' => ['firstname' => '-', 'lastname' => '']], false],
+			'real agent'       => [['owner_id' => 275, 'owner' => ['firstname' => 'Ada', 'lastname' => 'Lovelace']], true],
+			'id only'          => [['owner_id' => 275], true],
+			'placeholder name' => [['owner' => '-'], false],
+			'name only'        => [['owner' => 'Ada Lovelace'], true],
+			'absent'           => [[], false],
+			'zero id'          => [['owner_id' => 0], false],
+			'string id'        => [['owner_id' => '275'], true],
+			'string placeholder id' => [['owner_id' => '1'], false],
+		];
+	}
+
+	#[DataProvider('dataOwner')]
+	public function testOwnerDetection(array $extra, bool $expected): void {
+		$ticket = $this->parser->parse(json_encode(['ticket' => ['id' => 1] + $extra], JSON_THROW_ON_ERROR));
+		$this->assertSame($expected, $ticket->hasOwner());
+	}
+
+	public function testRealOwnerNameIsComposed(): void {
+		$ticket = $this->parser->parse(json_encode([
+			'ticket' => ['id' => 1, 'owner_id' => 275, 'owner' => ['firstname' => 'Ada', 'lastname' => 'Lovelace']],
+		], JSON_THROW_ON_ERROR));
+		$this->assertSame('Ada Lovelace', $ticket->owner);
+		$this->assertSame(275, $ticket->ownerId);
+	}
+
+	/**
+	 * If Zammad could not render the owner the ticket must still be announced,
+	 * silently dropping everything would be worse than a spurious notification.
+	 */
+	public function testUnresolvedOwnerIsTreatedAsUnassigned(): void {
+		$ticket = $this->parser->parse('{"ticket":{"id":1,"owner":"#{ticket.owner.fullname / no such method}"}}');
+		$this->assertFalse($ticket->hasOwner());
+		$this->assertContains('#{ticket.owner.fullname / no such method}', $ticket->unresolved);
 	}
 }

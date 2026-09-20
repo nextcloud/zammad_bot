@@ -15,6 +15,14 @@ namespace OCA\ZammadBot\Model;
  */
 class Ticket {
 	/**
+	 * Zammad has no null owner: an unassigned ticket points at the built-in
+	 * placeholder user, which is always id 1 and renders as "-".
+	 */
+	public const UNASSIGNED_OWNER_ID = 1;
+
+	public const UNASSIGNED_OWNER_NAME = '-';
+
+	/**
 	 * @param list<string> $tags normalised to lowercase
 	 * @param list<string> $unresolved Zammad variables the payload did not render,
 	 *                                 kept for diagnostics and never matched
@@ -28,7 +36,25 @@ class Ticket {
 		public readonly string $priority = '',
 		public readonly string $group = '',
 		public readonly string $customer = '',
+		public readonly string $severity = '',
+		public readonly string $owner = '',
+		public readonly int $ownerId = 0,
 		public readonly array $unresolved = [],
 	) {
+	}
+
+	/**
+	 * Whether an agent has taken the ticket.
+	 *
+	 * When the payload says nothing about the owner this reports false, so an
+	 * incomplete payload still notifies rather than silently dropping tickets.
+	 */
+	public function hasOwner(): bool {
+		if ($this->ownerId > 0) {
+			return $this->ownerId !== self::UNASSIGNED_OWNER_ID;
+		}
+
+		$owner = trim($this->owner);
+		return $owner !== '' && $owner !== self::UNASSIGNED_OWNER_NAME;
 	}
 }

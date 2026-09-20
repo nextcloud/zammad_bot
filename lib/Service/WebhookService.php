@@ -31,7 +31,7 @@ class WebhookService {
 	}
 
 	/**
-	 * @return array{sent: int, skipped: int, failed: int, tags: list<string>, configured: list<string>, unresolved?: list<string>}
+	 * @return array{sent: int, skipped: int, failed: int, tags: list<string>, configured: list<string>, owner: string, unresolved?: list<string>}
 	 * @throws InvalidPayloadException
 	 */
 	public function handle(string $rawBody): array {
@@ -43,7 +43,15 @@ class WebhookService {
 
 		$sent = $skipped = $failed = 0;
 		$matched = array_values(array_intersect($tags, $configured));
-		$report = ['tags' => $tags, 'configured' => $configured];
+		$report = ['tags' => $tags, 'configured' => $configured, 'owner' => $ticket->owner];
+
+		// Checked before the claim, so a ticket that is handed back later can
+		// still be announced.
+		if ($this->config->onlyUnassigned() && $ticket->hasOwner()) {
+			$this->logger->debug('Zammad ticket ' . $ticket->id . ' was not announced: it is owned by '
+				. $ticket->owner, $report);
+			return ['sent' => 0, 'skipped' => 0, 'failed' => 0] + $report;
+		}
 
 		if ($matched === []) {
 			// Reported at info because a silent success is the hardest case to

@@ -13,7 +13,7 @@
 	<version>1.0.0</version>
 	<licence>agpl</licence>
 
-	<author>Joas Schilling</author>
+	<author>Nextcloud GmbH</author>
 
 	<namespace>ZammadBot</namespace>
 
@@ -41,5 +41,7 @@
 		<command>OCA\ZammadBot\Command\TagSet</command>
 		<command>OCA\ZammadBot\Command\TagRemove</command>
 		<command>OCA\ZammadBot\Command\TagList</command>
+		<command>OCA\ZammadBot\Command\LeadSet</command>
+		<command>OCA\ZammadBot\Command\LeadRemove</command>
 	</commands>
 </info>

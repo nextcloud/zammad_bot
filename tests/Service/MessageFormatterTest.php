@@ -22,6 +22,7 @@ class MessageFormatterTest extends TestCase {
 		parent::setUp();
 		$this->config = $this->createMock(Config::class);
 		$this->config->method('getZammadUrl')->willReturn('https://zammad.example.com');
+		$this->config->method('getEscalationSeverities')->willReturn(['sev1', 'sev2']);
 		$this->formatter = new MessageFormatter($this->config);
 	}
 
@@ -35,6 +36,7 @@ class MessageFormatterTest extends TestCase {
 			$overrides['priority'] ?? '2 normal',
 			$overrides['group'] ?? 'Users',
 			$overrides['customer'] ?? 'Ada Lovelace',
+			$overrides['severity'] ?? '',
 		);
 	}
 
@@ -115,5 +117,85 @@ class MessageFormatterTest extends TestCase {
 
 	public function testMatchedTagIsShown(): void {
 		$this->assertStringContainsString('`team-support`', $this->formatter->format($this->ticket(), 'team-support'));
+	}
+
+	public function testSeverityIsShownWhenPresent(): void {
+		$this->assertStringContainsString(
+			'Severity: sev3',
+			$this->formatter->format($this->ticket(['severity' => 'sev3']), 'talk'),
+		);
+	}
+
+	public function testSevereTicketMentionsTheLead(): void {
+		$this->config->method('getTagLead')->with('talk')->willReturn('ada');
+
+		$message = $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk');
+		$this->assertStringContainsString('❗ **sev1** — @"ada"', $message);
+	}
+
+	public function testSev2AlsoMentions(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$this->assertStringContainsString('@"ada"', $this->formatter->format($this->ticket(['severity' => 'sev2']), 'talk'));
+	}
+
+	public function testGroupLeadIsMentionedAsAGroup(): void {
+		$this->config->method('getTagLead')->willReturn('group/talk-leads');
+		$this->assertStringContainsString('@"group/talk-leads"', $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk'));
+	}
+
+	public function testLowSeverityDoesNotMention(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$this->assertStringNotContainsString('@"ada"', $this->formatter->format($this->ticket(['severity' => 'sev4']), 'talk'));
+	}
+
+	public function testSeverityMatchingIgnoresCase(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$this->assertStringContainsString('@"ada"', $this->formatter->format($this->ticket(['severity' => 'SEV1']), 'talk'));
+	}
+
+	public function testWithoutASeverityNobodyIsMentioned(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$this->assertStringNotContainsString('@"', $this->formatter->format($this->ticket(), 'talk'));
+	}
+
+	public function testWithoutALeadNobodyIsMentioned(): void {
+		$this->config->method('getTagLead')->willReturn('');
+		$this->assertStringNotContainsString('@"', $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk'));
+	}
+
+	/**
+	 * An id core's mention parser would not accept must not be emitted at all,
+	 * it would read as plain text and notify nobody.
+	 */
+	public function testUnmentionableLeadIsDropped(): void {
+		$this->config->method('getTagLead')->willReturn('not a *valid* id!');
+		$this->assertStringNotContainsString('@"', $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk'));
+	}
+
+	/**
+	 * The mention must survive the Markdown escaping, an escaped underscore
+	 * would break the id and notify nobody.
+	 */
+	public function testMentionIsNotMarkdownEscaped(): void {
+		$this->config->method('getTagLead')->willReturn('ada_lovelace');
+		$this->assertStringContainsString('@"ada_lovelace"', $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk'));
+	}
+
+	/**
+	 * Core strips mentions inside code spans, so the mention may never end up
+	 * on the same construct as the tag.
+	 */
+	public function testMentionIsNotInsideACodeSpan(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$message = $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk');
+		$stripped = preg_replace('/`[^`\n]*`/', '', $message);
+		$this->assertStringContainsString('@"ada"', $stripped);
+	}
+
+	public function testEscalationIsItsOwnLine(): void {
+		$this->config->method('getTagLead')->willReturn('ada');
+		$lines = explode("\n", $this->formatter->format($this->ticket(['severity' => 'sev1']), 'talk'));
+		$this->assertCount(3, $lines);
+		$this->assertStringStartsWith('❗', $lines[2]);
 	}
 }

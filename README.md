@@ -89,10 +89,16 @@ string** matching this webhook's trigger condition:
     "state": "#{ticket.state.name}",
     "priority": "#{ticket.priority.name}",
     "group": "#{ticket.group.name}",
-    "customer": "#{ticket.customer.fullname}"
+    "customer": "#{ticket.customer.fullname}",
+    "severity": "#{ticket.severity}",
+    "owner_id": "#{ticket.owner_id}"
   }
 }
 ```
+
+`severity` is only needed for the escalation mentions described below. If your
+Zammad cannot render it you will see it reported back in `unresolved` and the
+bot simply never mentions anyone.
 
 Create one webhook and one trigger per team, each with its own `tag` literal.
 The tag in the payload and the tag in the trigger condition must match, and both
@@ -188,6 +194,57 @@ Then paste each payload into its webhook and point a trigger at it whose `Tags
 contains one` condition is that same tag. `occ zammad_bot:tag:list` shows what
 Nextcloud knows about.
 
+## Only unassigned tickets
+
+By default a ticket an agent has already taken is not announced, so the room
+only sees work nobody has picked up yet.
+
+Zammad has no empty owner: an unassigned ticket points at the built-in
+placeholder user, which is always id 1. The bot therefore reads `owner_id` from
+the payload and treats `1` as unassigned; `owner` as a name works too, where the
+placeholder renders as `-`.
+
+The check runs **before** a ticket is marked as announced, so a ticket that is
+assigned now and handed back later is still announced then.
+
+If the payload carries no owner information at all — or Zammad failed to render
+it — the ticket is announced. A spurious notification is better than silently
+dropping every ticket.
+
+```bash
+occ zammad_bot:configure --only-unassigned=false   # announce every ticket
+```
+
+## Mentioning the team lead
+
+A severe ticket can mention the team's lead so it raises a real notification
+rather than just appearing in the room:
+
+```
+🎫 **[#96105572 Printer on fire](https://zammad.example.com/#ticket/zoom/42)** — `talk`
+Requester: Ada Lovelace · Group: Support · State: open · Priority: 2 normal · Severity: sev1
+❗ **sev1** — @"ada"
+```
+
+```bash
+occ zammad_bot:lead:set talk ada               # a user
+occ zammad_bot:lead:set talk group/talk-leads   # or a whole group
+occ zammad_bot:lead:remove talk
+```
+
+`occ zammad_bot:tag:list` shows the lead of every tag. By default `sev1` and
+`sev2` mention; change that with
+
+```bash
+occ zammad_bot:configure --escalation-severities=sev1,sev2,sev3
+occ zammad_bot:configure --escalation-severities=""   # never mention
+```
+
+The severity comes from `ticket.severity` in the webhook payload, and matching
+ignores case. Without a `severity`, without a lead for that tag, or with an id
+that Nextcloud's mention parser would not accept, no mention is added and the
+message is posted as usual.
+
 ## Configuration reference
 
 | Command | Purpose |
@@ -195,9 +252,12 @@ Nextcloud knows about.
 | `occ zammad_bot:configure` | show or change the configuration |
 | `occ zammad_bot:tag:set <tag> <token>` | map a tag to a conversation |
 | `occ zammad_bot:tag:remove <tag>` | remove a mapping |
-| `occ zammad_bot:tag:list` | list the mappings |
+| `occ zammad_bot:tag:list` | list the mappings and their leads |
+| `occ zammad_bot:lead:set <tag> <user\|group/id>` | mention this lead on a severe ticket |
+| `occ zammad_bot:lead:remove <tag>` | stop mentioning a lead |
 
-`occ zammad_bot:configure` also accepts `--talk-base-url` when the server cannot
+`occ zammad_bot:configure` also accepts `--only-unassigned`,
+`--escalation-severities`, `--talk-base-url` when the server cannot
 reach its own public URL, `--verify-tls=false` for a self-signed loopback, and
 `--retention-days` for how long a ticket stays deduplicated (90 by default).
 

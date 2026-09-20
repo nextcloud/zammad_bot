@@ -137,4 +137,62 @@ class ConfigTest extends TestCase {
 		$this->appConfig->expects($this->once())->method('setAppValueString')->with('talk_base_url', '');
 		$this->config->setTalkBaseUrl('');
 	}
+
+	public function testTagLeadRoundTrip(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([]);
+		$this->appConfig->expects($this->once())->method('setAppValueArray')
+			->with('tag_leads', ['talk' => 'ada']);
+		$this->config->setTagLead('Talk', 'ada');
+	}
+
+	public function testGroupLeadIsAccepted(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([]);
+		$this->appConfig->expects($this->once())->method('setAppValueArray')
+			->with('tag_leads', ['talk' => 'group/talk-leads']);
+		$this->config->setTagLead('talk', 'group/talk-leads');
+	}
+
+	public static function dataUnmentionable(): array {
+		return [['not valid!'], ['a*b'], [''], ['group/'], ['"quoted"'], ['a"b']];
+	}
+
+	#[DataProvider('dataUnmentionable')]
+	public function testUnmentionableLeadIsRejected(string $lead): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([]);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->config->setTagLead('talk', $lead);
+	}
+
+	public function testGetTagLeadNormalisesTheTag(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn(['talk' => 'ada']);
+		$this->assertSame('ada', $this->config->getTagLead(' TALK '));
+		$this->assertSame('', $this->config->getTagLead('unknown'));
+	}
+
+	public function testRemoveTagLead(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn(['talk' => 'ada']);
+		$this->appConfig->expects($this->once())->method('setAppValueArray')->with('tag_leads', []);
+		$this->assertTrue($this->config->removeTagLead('talk'));
+	}
+
+	public function testRemoveUnknownTagLead(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([]);
+		$this->appConfig->expects($this->never())->method('setAppValueArray');
+		$this->assertFalse($this->config->removeTagLead('talk'));
+	}
+
+	public function testDefaultEscalationSeverities(): void {
+		$this->appConfig->method('getAppValueArray')->willReturnArgument(1);
+		$this->assertSame(['sev1', 'sev2'], $this->config->getEscalationSeverities());
+	}
+
+	public function testEscalationSeveritiesAreNormalised(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([' SEV1 ', 'sev1', 'Sev3', '']);
+		$this->assertSame(['sev1', 'sev3'], $this->config->getEscalationSeverities());
+	}
+
+	public function testEscalationCanBeDisabled(): void {
+		$this->appConfig->method('getAppValueArray')->willReturn([]);
+		$this->assertSame([], $this->config->getEscalationSeverities());
+	}
 }

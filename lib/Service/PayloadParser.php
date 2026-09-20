@@ -55,6 +55,9 @@ class PayloadParser {
 			$this->readNamed($ticket, 'priority'),
 			$this->readNamed($ticket, 'group'),
 			$this->readNamed($ticket, 'customer'),
+			$this->readResolved($ticket, 'severity', $unresolved),
+			$this->readResolved($ticket, 'owner', $unresolved),
+			(int)$this->readResolved($ticket, 'owner_id', $unresolved),
 			$unresolved,
 		);
 	}
@@ -124,6 +127,22 @@ class PayloadParser {
 			}
 		}
 		return $tags;
+	}
+
+	/**
+	 * Read a value, discarding it when Zammad left an unrendered variable behind.
+	 *
+	 * @param list<string> $unresolved collected for diagnostics
+	 */
+	protected function readResolved(array $ticket, string $key, array &$unresolved): string {
+		$value = $this->readNamed($ticket, $key);
+		if (str_contains($value, '#{')) {
+			if (!in_array($value, $unresolved, true)) {
+				$unresolved[] = $value;
+			}
+			return '';
+		}
+		return $value;
 	}
 
 	/**

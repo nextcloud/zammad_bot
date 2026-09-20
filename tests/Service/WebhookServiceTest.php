@@ -55,8 +55,10 @@ class WebhookServiceTest extends TestCase {
 		);
 	}
 
-	protected function body(array $tags, int $id = 42): string {
-		return json_encode(['ticket' => ['id' => $id, 'number' => '1', 'title' => 't', 'tags' => $tags]], JSON_THROW_ON_ERROR);
+	protected function body(array $tags, int $id = 42, array $extra = []): string {
+		return json_encode([
+			'ticket' => ['id' => $id, 'number' => '1', 'title' => 't', 'tags' => $tags] + $extra,
+		], JSON_THROW_ON_ERROR);
 	}
 
 	protected function assertCounts(array $expected, array $result): void {
@@ -151,7 +153,7 @@ class WebhookServiceTest extends TestCase {
 		$this->logger->expects($this->once())->method('info')
 			->with(
 				$this->stringContains('none of the tags [billing]'),
-				['tags' => ['billing'], 'configured' => ['team-infra']],
+				['tags' => ['billing'], 'configured' => ['team-infra'], 'owner' => ''],
 			);
 
 		$this->service->handle($this->body(['billing']));
@@ -193,5 +195,58 @@ class WebhookServiceTest extends TestCase {
 	public function testInvalidPayloadIsPropagated(): void {
 		$this->expectException(InvalidPayloadException::class);
 		$this->service->handle('not json');
+	}
+
+	public function testOwnedTicketIsNotAnnounced(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->config->method('onlyUnassigned')->willReturn(true);
+		$this->mapper->expects($this->never())->method('claim');
+		$this->talkService->expects($this->never())->method('sendMessage');
+
+		$result = $this->service->handle($this->body(['team-infra'], 42, ['owner_id' => 275, 'owner' => 'Ada Lovelace']));
+		$this->assertSame(0, $result['sent']);
+		$this->assertSame('Ada Lovelace', $result['owner']);
+	}
+
+	/**
+	 * Zammad points unassigned tickets at the placeholder user id 1.
+	 */
+	public function testPlaceholderOwnerCountsAsUnassigned(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->config->method('onlyUnassigned')->willReturn(true);
+		$this->mapper->method('claim')->willReturn(true);
+		$this->talkService->expects($this->once())->method('sendMessage');
+
+		$this->assertSame(1, $this->service->handle($this->body(['team-infra'], 42, ['owner_id' => 1, 'owner' => '-']))['sent']);
+	}
+
+	public function testPayloadWithoutOwnerInformationStillAnnounces(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->config->method('onlyUnassigned')->willReturn(true);
+		$this->mapper->method('claim')->willReturn(true);
+		$this->talkService->expects($this->once())->method('sendMessage');
+
+		$this->assertSame(1, $this->service->handle($this->body(['team-infra']))['sent']);
+	}
+
+	public function testOwnerFilterCanBeDisabled(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->config->method('onlyUnassigned')->willReturn(false);
+		$this->mapper->method('claim')->willReturn(true);
+		$this->talkService->expects($this->once())->method('sendMessage');
+
+		$this->assertSame(1, $this->service->handle($this->body(['team-infra'], 42, ['owner_id' => 275]))['sent']);
+	}
+
+	/**
+	 * Nothing is claimed for an owned ticket, so it can still be announced if an
+	 * agent hands it back later.
+	 */
+	public function testOwnedTicketIsNotClaimedSoItCanBeAnnouncedLater(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->config->method('onlyUnassigned')->willReturn(true);
+		$this->mapper->expects($this->never())->method('claim');
+
+		$this->service->handle($this->body(['team-infra'], 42, ['owner_id' => 275]));
 	}
 }
