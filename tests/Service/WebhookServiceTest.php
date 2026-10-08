@@ -249,4 +249,27 @@ class WebhookServiceTest extends TestCase {
 
 		$this->service->handle($this->body(['team-infra'], 42, ['owner_id' => 275]));
 	}
+
+	public static function dataClosedTicketIsNotAnnounced(): array {
+		return [['closed'], ['Merged'], ['removed']];
+	}
+
+	/**
+	 * @dataProvider dataClosedTicketIsNotAnnounced
+	 */
+	public function testClosedTicketIsNotAnnounced(string $state): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->mapper->expects($this->never())->method('claim');
+		$this->talkService->expects($this->never())->method('sendMessage');
+
+		$this->assertSame(0, $this->service->handle($this->body(['team-infra'], 42, ['state' => $state]))['sent']);
+	}
+
+	public function testOpenTicketIsAnnounced(): void {
+		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
+		$this->mapper->method('claim')->willReturn(true);
+		$this->talkService->expects($this->once())->method('sendMessage');
+
+		$this->assertSame(1, $this->service->handle($this->body(['team-infra'], 42, ['state' => 'pending close']))['sent']);
+	}
 }

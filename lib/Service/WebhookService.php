@@ -45,6 +45,11 @@ class WebhookService {
 		$matched = array_values(array_intersect($tags, $configured));
 		$report = ['tags' => $tags, 'configured' => $configured, 'owner' => $ticket->owner];
 
+		if ($ticket->isClosed()) {
+			$this->logger->debug('Zammad ticket ' . $ticket->id . ' was not announced: it is ' . $ticket->state, $report);
+			return ['sent' => 0, 'skipped' => 0, 'failed' => 0] + $report;
+		}
+
 		// Checked before the claim, so a ticket that is handed back later can
 		// still be announced.
 		if ($this->config->onlyUnassigned() && $ticket->hasOwner()) {
