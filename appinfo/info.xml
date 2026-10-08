@@ -10,7 +10,7 @@
 	<summary><![CDATA[Posts Zammad tickets into Talk when they are tagged for your team]]></summary>
 	<description><![CDATA[Receives a webhook from a Zammad trigger and posts the ticket into the Talk conversation mapped to the tag that matched. Each ticket is announced only once per tag.]]></description>
 
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<licence>agpl</licence>
 
 	<author>Nextcloud GmbH</author>
@@ -29,7 +29,7 @@
 	<repository>https://github.com/nextcloud/zammad_bot.git</repository>
 
 	<dependencies>
-		<nextcloud min-version="36" max-version="36" />
+		<nextcloud min-version="35" max-version="36" />
 	</dependencies>
 
 	<background-jobs>
