@@ -23,6 +23,11 @@ class Ticket {
 	public const UNASSIGNED_OWNER_NAME = '-';
 
 	/**
+	 * Zammad's built-in states of the "closed", "merged" and "removed" types.
+	 */
+	public const CLOSED_STATES = ['closed', 'merged', 'removed'];
+
+	/**
 	 * @param list<string> $tags normalised to lowercase
 	 * @param list<string> $unresolved Zammad variables the payload did not render,
 	 *                                 kept for diagnostics and never matched
@@ -56,5 +61,9 @@ class Ticket {
 
 		$owner = trim($this->owner);
 		return $owner !== '' && $owner !== self::UNASSIGNED_OWNER_NAME;
+	}
+
+	public function isClosed(): bool {
+		return in_array(strtolower(trim($this->state)), self::CLOSED_STATES, true);
 	}
 }
