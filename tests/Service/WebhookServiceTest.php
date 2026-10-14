@@ -251,7 +251,7 @@ class WebhookServiceTest extends TestCase {
 	}
 
 	public static function dataClosedTicketIsNotAnnounced(): array {
-		return [['closed'], ['Merged'], ['removed']];
+		return [['closed'], ['Merged'], ['removed'], ['Pending Close']];
 	}
 
 	/**

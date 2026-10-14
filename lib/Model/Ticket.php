@@ -23,9 +23,10 @@ class Ticket {
 	public const UNASSIGNED_OWNER_NAME = '-';
 
 	/**
-	 * Zammad's built-in states of the "closed", "merged" and "removed" types.
+	 * Zammad's built-in states of the "closed", "merged" and "removed" types,
+	 * plus "pending close" which closes the ticket automatically.
 	 */
-	public const CLOSED_STATES = ['closed', 'merged', 'removed'];
+	public const CLOSED_STATES = ['closed', 'merged', 'removed', 'pending close'];
 
 	/**
 	 * @param list<string> $tags normalised to lowercase
