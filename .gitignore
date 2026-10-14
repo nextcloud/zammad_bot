@@ -1,6 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Nextcloud GmbH and Nextcloud contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
 /vendor/
 /vendor-bin/*/vendor/
-/vendor-bin/*/composer.lock
 /build/
 .php-cs-fixer.cache
 .phpunit.result.cache

@@ -17,6 +17,7 @@ use OCA\ZammadBot\Service\PayloadParser;
 use OCA\ZammadBot\Service\TalkService;
 use OCA\ZammadBot\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Test\TestCase;
@@ -254,9 +255,7 @@ class WebhookServiceTest extends TestCase {
 		return [['closed'], ['Merged'], ['removed'], ['Pending Close']];
 	}
 
-	/**
-	 * @dataProvider dataClosedTicketIsNotAnnounced
-	 */
+	#[DataProvider('dataClosedTicketIsNotAnnounced')]
 	public function testClosedTicketIsNotAnnounced(string $state): void {
 		$this->config->method('getTagRooms')->willReturn(['team-infra' => 'room1']);
 		$this->mapper->expects($this->never())->method('claim');
@@ -270,6 +269,6 @@ class WebhookServiceTest extends TestCase {
 		$this->mapper->method('claim')->willReturn(true);
 		$this->talkService->expects($this->once())->method('sendMessage');
 
-		$this->assertSame(1, $this->service->handle($this->body(['team-infra'], 42, ['state' => 'pending close']))['sent']);
+		$this->assertSame(1, $this->service->handle($this->body(['team-infra'], 42, ['state' => 'pending reminder']))['sent']);
 	}
 }
