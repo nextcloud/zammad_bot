@@ -261,14 +261,14 @@ class PayloadParserTest extends TestCase {
 
 	public static function dataOwner(): array {
 		return [
-			'placeholder id'   => [['owner_id' => 1, 'owner' => ['firstname' => '-', 'lastname' => '']], false],
-			'real agent'       => [['owner_id' => 275, 'owner' => ['firstname' => 'Ada', 'lastname' => 'Lovelace']], true],
-			'id only'          => [['owner_id' => 275], true],
+			'placeholder id' => [['owner_id' => 1, 'owner' => ['firstname' => '-', 'lastname' => '']], false],
+			'real agent' => [['owner_id' => 275, 'owner' => ['firstname' => 'Ada', 'lastname' => 'Lovelace']], true],
+			'id only' => [['owner_id' => 275], true],
 			'placeholder name' => [['owner' => '-'], false],
-			'name only'        => [['owner' => 'Ada Lovelace'], true],
-			'absent'           => [[], false],
-			'zero id'          => [['owner_id' => 0], false],
-			'string id'        => [['owner_id' => '275'], true],
+			'name only' => [['owner' => 'Ada Lovelace'], true],
+			'absent' => [[], false],
+			'zero id' => [['owner_id' => 0], false],
+			'string id' => [['owner_id' => '275'], true],
 			'string placeholder id' => [['owner_id' => '1'], false],
 		];
 	}
