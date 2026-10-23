@@ -23,6 +23,7 @@ class MessageFormatterTest extends TestCase {
 		$this->config = $this->createMock(Config::class);
 		$this->config->method('getZammadUrl')->willReturn('https://zammad.example.com');
 		$this->config->method('getEscalationSeverities')->willReturn(['sev1', 'sev2']);
+		$this->config->method('getConfidentialGroups')->willReturn(['legal']);
 		$this->formatter = new MessageFormatter($this->config);
 	}
 
@@ -113,6 +114,20 @@ class MessageFormatterTest extends TestCase {
 	public function testTicketWithoutNumberAndTitleFallsBackToId(): void {
 		$message = $this->formatter->format($this->ticket(['number' => '', 'title' => '']), 'team-infra');
 		$this->assertStringContainsString('[#42]', $message);
+	}
+
+	public function testConfidentialGroupHidesTitleAndCustomer(): void {
+		$this->assertSame(
+			"🎫 **[#1234](https://zammad.example.com/#ticket/zoom/42)** — `team-infra`\n"
+			. 'Group: LEGAL · State: open · Priority: 2 normal',
+			$this->formatter->format($this->ticket(['group' => ' LEGAL ']), 'team-infra'),
+		);
+	}
+
+	public function testConfidentialGroupWithoutNumberFallsBackToId(): void {
+		$message = $this->formatter->format($this->ticket(['group' => 'Legal', 'number' => '']), 'team-infra');
+		$this->assertStringContainsString('[#42]', $message);
+		$this->assertStringNotContainsString('Printer on fire', $message);
 	}
 
 	public function testMatchedTagIsShown(): void {

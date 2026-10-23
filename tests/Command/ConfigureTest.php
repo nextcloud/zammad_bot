@@ -125,6 +125,13 @@ class ConfigureTest extends TestCase {
 		$this->assertSame(0, $tester->execute(['--verify-tls' => 'false', '--retention-days' => '30']));
 	}
 
+	public function testSetsConfidentialGroups(): void {
+		$this->config->expects($this->once())->method('setConfidentialGroups')->with(['Legal', 'HR']);
+
+		$tester = new CommandTester($this->command);
+		$this->assertSame(0, $tester->execute(['--confidential-groups' => 'Legal, HR,']));
+	}
+
 	public function testPromptsForAHiddenWebhookSecret(): void {
 		$this->config->expects($this->once())->method('setWebhookSecret')->with('typed-secret');
 		// occ provides this helper set, CommandTester on its own does not.

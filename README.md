@@ -245,6 +245,17 @@ ignores case. Without a `severity`, without a lead for that tag, or with an id
 that Nextcloud's mention parser would not accept, no mention is added and the
 message is posted as usual.
 
+## Confidential groups
+
+Tickets of a confidential Zammad group are announced without their title and
+customer, only the number, group, state, priority and severity are posted.
+No group is confidential by default; matching ignores case.
+
+```bash
+occ zammad_bot:configure --confidential-groups=Legal,HR
+occ zammad_bot:configure --confidential-groups=""   # post every title
+```
+
 ## Configuration reference
 
 | Command | Purpose |
@@ -257,7 +268,7 @@ message is posted as usual.
 | `occ zammad_bot:lead:remove <tag>` | stop mentioning a lead |
 
 `occ zammad_bot:configure` also accepts `--only-unassigned`,
-`--escalation-severities`, `--talk-base-url` when the server cannot
+`--escalation-severities`, `--confidential-groups`, `--talk-base-url` when the server cannot
 reach its own public URL, `--verify-tls=false` for a self-signed loopback, and
 `--retention-days` for how long a ticket stays deduplicated (90 by default).
 

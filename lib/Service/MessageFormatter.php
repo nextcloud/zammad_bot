@@ -26,8 +26,9 @@ class MessageFormatter {
 	}
 
 	public function format(Ticket $ticket, string $matchedTag): string {
-		$title = $this->escape($this->truncate($ticket->title, self::MAX_TITLE_LENGTH));
-		$label = $ticket->number !== '' ? '#' . $ticket->number . ' ' . $title : $title;
+		$confidential = in_array(mb_strtolower(trim($ticket->group)), $this->config->getConfidentialGroups(), true);
+		$title = $confidential ? '' : $this->escape($this->truncate($ticket->title, self::MAX_TITLE_LENGTH));
+		$label = $ticket->number !== '' ? trim('#' . $ticket->number . ' ' . $title) : $title;
 		if (trim($label) === '') {
 			$label = '#' . $ticket->id;
 		}
@@ -40,7 +41,7 @@ class MessageFormatter {
 
 		$details = [];
 		foreach ([
-			'Requester' => $ticket->customer,
+			'Requester' => $confidential ? '' : $ticket->customer,
 			'Group' => $ticket->group,
 			'State' => $ticket->state,
 			'Priority' => $ticket->priority,

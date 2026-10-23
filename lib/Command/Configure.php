@@ -42,7 +42,8 @@ class Configure extends Command {
 			->addOption('verify-tls', null, InputOption::VALUE_REQUIRED, 'Whether to verify TLS when calling the local Talk API (true/false)')
 			->addOption('retention-days', null, InputOption::VALUE_REQUIRED, 'How long a ticket stays deduplicated, in days')
 			->addOption('only-unassigned', null, InputOption::VALUE_REQUIRED, 'Only announce tickets nobody has taken yet (true/false)')
-			->addOption('escalation-severities', null, InputOption::VALUE_REQUIRED, 'Comma separated severities that mention the team lead, e.g. sev1,sev2');
+			->addOption('escalation-severities', null, InputOption::VALUE_REQUIRED, 'Comma separated severities that mention the team lead, e.g. sev1,sev2')
+			->addOption('confidential-groups', null, InputOption::VALUE_REQUIRED, 'Comma separated Zammad groups whose ticket title and customer are not posted');
 	}
 
 	#[\Override]
@@ -125,6 +126,13 @@ class Configure extends Command {
 			$changed = true;
 		}
 
+		$groups = $input->getOption('confidential-groups');
+		if ($groups !== null) {
+			$this->config->setConfidentialGroups(array_filter(array_map('trim', explode(',', (string)$groups))));
+			$output->writeln('<info>Confidential groups saved</info>');
+			$changed = true;
+		}
+
 		$retentionDays = $input->getOption('retention-days');
 		if ($retentionDays !== null) {
 			$this->config->setRetentionDays((int)$retentionDays);
@@ -175,5 +183,6 @@ class Configure extends Command {
 		$output->writeln('Only unassigned: ' . ($this->config->onlyUnassigned() ? 'yes' : 'no, every ticket is announced'));
 		$output->writeln('Escalation:      ' . (implode(', ', $this->config->getEscalationSeverities()) ?: 'disabled')
 			. ' (' . (count($this->config->getTagLeads()) ?: 'no') . ' lead(s) configured)');
+		$output->writeln('Confidential:    ' . (implode(', ', $this->config->getConfidentialGroups()) ?: 'none'));
 	}
 }
