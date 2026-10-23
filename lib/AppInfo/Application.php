@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace OCA\ZammadBot\AppInfo;
 
+use OCA\ZammadBot\ConfigLexicon;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -22,6 +23,7 @@ class Application extends App implements IBootstrap {
 
 	#[\Override]
 	public function register(IRegistrationContext $context): void {
+		$context->registerConfigLexicon(ConfigLexicon::class);
 	}
 
 	#[\Override]

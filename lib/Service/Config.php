@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace OCA\ZammadBot\Service;
 
+use OCA\ZammadBot\ConfigLexicon;
 use OCP\AppFramework\Services\IAppConfig;
 
 /**
@@ -17,11 +18,6 @@ use OCP\AppFramework\Services\IAppConfig;
  * be unit tested against a mock of it.
  */
 class Config {
-	public const DEFAULT_RETENTION_DAYS = 90;
-
-	/** @var list<string> */
-	public const DEFAULT_SEVERITIES = ['sev1', 'sev2'];
-
 	/** Conversation tokens as accepted by Talk's bot routes. */
 	private const TOKEN_REGEX = '/^[a-z0-9]{4,30}$/';
 
@@ -31,7 +27,7 @@ class Config {
 	}
 
 	public function getZammadUrl(): string {
-		return $this->appConfig->getAppValueString('zammad_url');
+		return $this->appConfig->getAppValueString(ConfigLexicon::ZAMMAD_URL);
 	}
 
 	/**
@@ -42,11 +38,11 @@ class Config {
 		if (!preg_match('/^https?:\/\/\S+$/', $url)) {
 			throw new \InvalidArgumentException('Zammad URL must start with http:// or https://');
 		}
-		$this->appConfig->setAppValueString('zammad_url', $url);
+		$this->appConfig->setAppValueString(ConfigLexicon::ZAMMAD_URL, $url);
 	}
 
 	public function getWebhookSecret(): string {
-		return $this->appConfig->getAppValueString('webhook_secret');
+		return $this->appConfig->getAppValueString(ConfigLexicon::WEBHOOK_SECRET);
 	}
 
 	public function setWebhookSecret(string $secret): void {
@@ -54,11 +50,11 @@ class Config {
 		if ($secret === '') {
 			throw new \InvalidArgumentException('Webhook secret must not be empty');
 		}
-		$this->appConfig->setAppValueString('webhook_secret', $secret, sensitive: true);
+		$this->appConfig->setAppValueString(ConfigLexicon::WEBHOOK_SECRET, $secret, sensitive: true);
 	}
 
 	public function getTalkBotSecret(): string {
-		return $this->appConfig->getAppValueString('talk_bot_secret');
+		return $this->appConfig->getAppValueString(ConfigLexicon::TALK_BOT_SECRET);
 	}
 
 	public function setTalkBotSecret(string $secret): void {
@@ -66,7 +62,7 @@ class Config {
 		if (strlen($secret) < 40 || strlen($secret) > 128) {
 			throw new \InvalidArgumentException('Talk bot secret must be between 40 and 128 characters');
 		}
-		$this->appConfig->setAppValueString('talk_bot_secret', $secret, sensitive: true);
+		$this->appConfig->setAppValueString(ConfigLexicon::TALK_BOT_SECRET, $secret, sensitive: true);
 	}
 
 	/**
@@ -74,7 +70,7 @@ class Config {
 	 */
 	public function getTagRooms(): array {
 		$map = [];
-		foreach ($this->appConfig->getAppValueArray('tag_rooms') as $tag => $token) {
+		foreach ($this->appConfig->getAppValueArray(ConfigLexicon::TAG_ROOMS) as $tag => $token) {
 			if (is_string($tag) && is_string($token)) {
 				$map[self::normaliseTag($tag)] = $token;
 			}
@@ -96,7 +92,7 @@ class Config {
 
 		$map = $this->getTagRooms();
 		$map[$tag] = $token;
-		$this->appConfig->setAppValueArray('tag_rooms', $map);
+		$this->appConfig->setAppValueArray(ConfigLexicon::TAG_ROOMS, $map);
 	}
 
 	/**
@@ -110,7 +106,7 @@ class Config {
 		}
 
 		unset($map[$tag]);
-		$this->appConfig->setAppValueArray('tag_rooms', $map);
+		$this->appConfig->setAppValueArray(ConfigLexicon::TAG_ROOMS, $map);
 		return true;
 	}
 
@@ -119,7 +115,7 @@ class Config {
 	 */
 	public function getTagLeads(): array {
 		$map = [];
-		foreach ($this->appConfig->getAppValueArray('tag_leads') as $tag => $lead) {
+		foreach ($this->appConfig->getAppValueArray(ConfigLexicon::TAG_LEADS) as $tag => $lead) {
 			if (is_string($tag) && is_string($lead)) {
 				$map[self::normaliseTag($tag)] = $lead;
 			}
@@ -146,7 +142,7 @@ class Config {
 
 		$map = $this->getTagLeads();
 		$map[$tag] = trim($lead);
-		$this->appConfig->setAppValueArray('tag_leads', $map);
+		$this->appConfig->setAppValueArray(ConfigLexicon::TAG_LEADS, $map);
 	}
 
 	public function removeTagLead(string $tag): bool {
@@ -157,7 +153,7 @@ class Config {
 		}
 
 		unset($map[$tag]);
-		$this->appConfig->setAppValueArray('tag_leads', $map);
+		$this->appConfig->setAppValueArray(ConfigLexicon::TAG_LEADS, $map);
 		return true;
 	}
 
@@ -167,14 +163,14 @@ class Config {
 	 * @return list<string>
 	 */
 	public function getEscalationSeverities(): array {
-		return self::normaliseList($this->appConfig->getAppValueArray('escalation_severities', self::DEFAULT_SEVERITIES));
+		return self::normaliseList($this->appConfig->getAppValueArray(ConfigLexicon::ESCALATION_SEVERITIES, ConfigLexicon::DEFAULT_SEVERITIES));
 	}
 
 	/**
 	 * @param list<string> $severities
 	 */
 	public function setEscalationSeverities(array $severities): void {
-		$this->appConfig->setAppValueArray('escalation_severities', self::normaliseList($severities));
+		$this->appConfig->setAppValueArray(ConfigLexicon::ESCALATION_SEVERITIES, self::normaliseList($severities));
 	}
 
 	/**
@@ -183,14 +179,14 @@ class Config {
 	 * @return list<string> lowercase group names
 	 */
 	public function getConfidentialGroups(): array {
-		return self::normaliseList($this->appConfig->getAppValueArray('confidential_groups'));
+		return self::normaliseList($this->appConfig->getAppValueArray(ConfigLexicon::CONFIDENTIAL_GROUPS));
 	}
 
 	/**
 	 * @param list<string> $groups
 	 */
 	public function setConfidentialGroups(array $groups): void {
-		$this->appConfig->setAppValueArray('confidential_groups', self::normaliseList($groups));
+		$this->appConfig->setAppValueArray(ConfigLexicon::CONFIDENTIAL_GROUPS, self::normaliseList($groups));
 	}
 
 	/**
@@ -223,7 +219,7 @@ class Config {
 	 * should derive it from the current request.
 	 */
 	public function getTalkBaseUrl(): string {
-		return rtrim($this->appConfig->getAppValueString('talk_base_url'), '/');
+		return rtrim($this->appConfig->getAppValueString(ConfigLexicon::TALK_BASE_URL), '/');
 	}
 
 	public function setTalkBaseUrl(string $url): void {
@@ -231,26 +227,26 @@ class Config {
 		if ($url !== '' && !preg_match('/^https?:\/\/\S+$/', $url)) {
 			throw new \InvalidArgumentException('Talk base URL must start with http:// or https://');
 		}
-		$this->appConfig->setAppValueString('talk_base_url', $url);
+		$this->appConfig->setAppValueString(ConfigLexicon::TALK_BASE_URL, $url);
 	}
 
 	/**
 	 * Whether tickets that an agent already took should be skipped.
 	 */
 	public function onlyUnassigned(): bool {
-		return $this->appConfig->getAppValueBool('only_unassigned', true);
+		return $this->appConfig->getAppValueBool(ConfigLexicon::ONLY_UNASSIGNED, true);
 	}
 
 	public function setOnlyUnassigned(bool $onlyUnassigned): void {
-		$this->appConfig->setAppValueBool('only_unassigned', $onlyUnassigned);
+		$this->appConfig->setAppValueBool(ConfigLexicon::ONLY_UNASSIGNED, $onlyUnassigned);
 	}
 
 	public function verifyTls(): bool {
-		return $this->appConfig->getAppValueBool('talk_verify_tls', true);
+		return $this->appConfig->getAppValueBool(ConfigLexicon::TALK_VERIFY_TLS, true);
 	}
 
 	public function setVerifyTls(bool $verify): void {
-		$this->appConfig->setAppValueBool('talk_verify_tls', $verify);
+		$this->appConfig->setAppValueBool(ConfigLexicon::TALK_VERIFY_TLS, $verify);
 	}
 
 	public function getRetentionSeconds(): int {
@@ -258,14 +254,14 @@ class Config {
 	}
 
 	public function getRetentionDays(): int {
-		return max(1, $this->appConfig->getAppValueInt('retention_days', self::DEFAULT_RETENTION_DAYS));
+		return max(1, $this->appConfig->getAppValueInt(ConfigLexicon::RETENTION_DAYS, ConfigLexicon::DEFAULT_RETENTION_DAYS));
 	}
 
 	public function setRetentionDays(int $days): void {
 		if ($days < 1) {
 			throw new \InvalidArgumentException('Retention must be at least one day');
 		}
-		$this->appConfig->setAppValueInt('retention_days', $days);
+		$this->appConfig->setAppValueInt(ConfigLexicon::RETENTION_DAYS, $days);
 	}
 
 	public static function normaliseTag(string $tag): string {
