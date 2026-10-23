@@ -191,6 +191,17 @@ class ConfigTest extends TestCase {
 		$this->assertSame(['sev1', 'sev3'], $this->config->getEscalationSeverities());
 	}
 
+	public function testNoConfidentialGroupsByDefault(): void {
+		$this->appConfig->method('getAppValueArray')->with('confidential_groups')->willReturn([]);
+		$this->assertSame([], $this->config->getConfidentialGroups());
+	}
+
+	public function testConfidentialGroupsAreNormalised(): void {
+		$this->appConfig->expects($this->once())->method('setAppValueArray')
+			->with('confidential_groups', ['legal', 'hr']);
+		$this->config->setConfidentialGroups([' Legal ', 'legal', 'HR']);
+	}
+
 	public function testEscalationCanBeDisabled(): void {
 		$this->appConfig->method('getAppValueArray')->willReturn([]);
 		$this->assertSame([], $this->config->getEscalationSeverities());

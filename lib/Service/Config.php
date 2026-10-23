@@ -167,23 +167,43 @@ class Config {
 	 * @return list<string>
 	 */
 	public function getEscalationSeverities(): array {
-		$values = $this->appConfig->getAppValueArray('escalation_severities', self::DEFAULT_SEVERITIES);
-		$severities = [];
-		foreach ($values as $value) {
-			if (is_string($value) && trim($value) !== '') {
-				$severities[] = mb_strtolower(trim($value));
-			}
-		}
-		return $severities === [] ? [] : array_values(array_unique($severities));
+		return self::normaliseList($this->appConfig->getAppValueArray('escalation_severities', self::DEFAULT_SEVERITIES));
 	}
 
 	/**
 	 * @param list<string> $severities
 	 */
 	public function setEscalationSeverities(array $severities): void {
-		$this->appConfig->setAppValueArray('escalation_severities', array_values(array_unique(
-			array_map(static fn (string $s): string => mb_strtolower(trim($s)), $severities),
-		)));
+		$this->appConfig->setAppValueArray('escalation_severities', self::normaliseList($severities));
+	}
+
+	/**
+	 * Zammad groups whose ticket title and customer are not posted into Talk.
+	 *
+	 * @return list<string> lowercase group names
+	 */
+	public function getConfidentialGroups(): array {
+		return self::normaliseList($this->appConfig->getAppValueArray('confidential_groups'));
+	}
+
+	/**
+	 * @param list<string> $groups
+	 */
+	public function setConfidentialGroups(array $groups): void {
+		$this->appConfig->setAppValueArray('confidential_groups', self::normaliseList($groups));
+	}
+
+	/**
+	 * @return list<string> trimmed, lowercase and unique non-empty strings
+	 */
+	protected static function normaliseList(array $values): array {
+		$list = [];
+		foreach ($values as $value) {
+			if (is_string($value) && trim($value) !== '') {
+				$list[] = mb_strtolower(trim($value));
+			}
+		}
+		return array_values(array_unique($list));
 	}
 
 	/**
