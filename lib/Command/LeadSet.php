@@ -25,7 +25,7 @@ class LeadSet extends Command {
 	protected function configure(): void {
 		$this->setName('zammad_bot:lead:set')
 			->setDescription('Set the lead mentioned when a severe ticket carries this tag')
-			->addArgument('tag', InputArgument::REQUIRED, 'The Zammad tag, e.g. talk')
+			->addArgument('tag', InputArgument::REQUIRED, 'The Zammad tag, e.g. team-infra')
 			->addArgument('lead', InputArgument::REQUIRED, 'A Nextcloud user id, or group/<id> to mention a whole group');
 	}
 

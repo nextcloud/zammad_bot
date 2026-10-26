@@ -183,7 +183,7 @@ class ConfigTest extends TestCase {
 
 	public function testDefaultEscalationSeverities(): void {
 		$this->appConfig->method('getAppValueArray')->willReturnArgument(1);
-		$this->assertSame(['sev1', 'sev2'], $this->config->getEscalationSeverities());
+		$this->assertSame([], $this->config->getEscalationSeverities());
 	}
 
 	public function testEscalationSeveritiesAreNormalised(): void {

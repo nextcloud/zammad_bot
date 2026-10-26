@@ -117,8 +117,7 @@ login attempt, and repeated failures count against Zammad's IP in the
 brute-force protection until it starts delaying and then rejecting deliveries.
 
 The custom payload also sends far less than the default one, which includes full
-group membership lists and organisation subscription and licence keys on every
-ticket update.
+group membership lists and organisation data on every ticket update.
 
 ### 4. Zammad trigger
 
@@ -164,7 +163,7 @@ discarded, so the trigger and the scheduler cannot notify twice.
 ## Setting up several teams
 
 The Zammad side is one webhook plus one trigger per team; the Nextcloud side is
-one command per team. To generate the eight payloads, fill in the pairs and run:
+one command per team. To generate the payloads, fill in the pairs and run:
 
 ```bash
 while read -r tag token; do
@@ -180,7 +179,9 @@ while read -r tag token; do
     "state": "#{ticket.state.name}",
     "priority": "#{ticket.priority.name}",
     "group": "#{ticket.group.name}",
-    "customer": "#{ticket.customer.fullname}"
+    "customer": "#{ticket.customer.fullname}",
+    "severity": "#{ticket.severity}",
+    "owner_id": "#{ticket.owner_id}"
   }
 }
 JSON
@@ -221,22 +222,22 @@ A severe ticket can mention the team's lead so it raises a real notification
 rather than just appearing in the room:
 
 ```
-🎫 **[#96105572 Printer on fire](https://zammad.example.com/#ticket/zoom/42)** — `talk`
+🎫 **[#96105572 Printer on fire](https://zammad.example.com/#ticket/zoom/42)** — `team-infra`
 Requester: Ada Lovelace · Group: Support · State: open · Priority: 2 normal · Severity: sev1
 ❗ **sev1** — @"ada"
 ```
 
 ```bash
-occ zammad_bot:lead:set talk ada               # a user
-occ zammad_bot:lead:set talk group/talk-leads   # or a whole group
-occ zammad_bot:lead:remove talk
+occ zammad_bot:lead:set team-infra ada                # a user
+occ zammad_bot:lead:set team-infra group/infra-leads  # or a whole group
+occ zammad_bot:lead:remove team-infra
 ```
 
-`occ zammad_bot:tag:list` shows the lead of every tag. By default `sev1` and
-`sev2` mention; change that with
+`occ zammad_bot:tag:list` shows the lead of every tag. No severity mentions by
+default; choose the ones that should with
 
 ```bash
-occ zammad_bot:configure --escalation-severities=sev1,sev2,sev3
+occ zammad_bot:configure --escalation-severities=sev1,sev2
 occ zammad_bot:configure --escalation-severities=""   # never mention
 ```
 

@@ -163,7 +163,7 @@ class Config {
 	 * @return list<string>
 	 */
 	public function getEscalationSeverities(): array {
-		return self::normaliseList($this->appConfig->getAppValueArray(ConfigLexicon::ESCALATION_SEVERITIES, ConfigLexicon::DEFAULT_SEVERITIES));
+		return self::normaliseList($this->appConfig->getAppValueArray(ConfigLexicon::ESCALATION_SEVERITIES));
 	}
 
 	/**

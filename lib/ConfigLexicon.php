@@ -28,8 +28,6 @@ class ConfigLexicon implements ILexicon {
 	public const string RETENTION_DAYS = 'retention_days';
 
 	public const int DEFAULT_RETENTION_DAYS = 90;
-	/** @var list<string> */
-	public const array DEFAULT_SEVERITIES = ['sev1', 'sev2'];
 
 	#[\Override]
 	public function getStrictness(): Strictness {
@@ -46,7 +44,7 @@ class ConfigLexicon implements ILexicon {
 			new Entry(self::TALK_VERIFY_TLS, ValueType::BOOL, true, definition: 'Whether the TLS certificate is verified when posting to Talk'),
 			new Entry(self::TAG_ROOMS, ValueType::ARRAY, [], definition: 'Map of Zammad tag to Talk conversation token'),
 			new Entry(self::TAG_LEADS, ValueType::ARRAY, [], definition: 'Map of Zammad tag to the user id or `group/<id>` mentioned on escalation'),
-			new Entry(self::ESCALATION_SEVERITIES, ValueType::ARRAY, self::DEFAULT_SEVERITIES, definition: 'Severities that make the bot mention the team lead'),
+			new Entry(self::ESCALATION_SEVERITIES, ValueType::ARRAY, [], definition: 'Severities that make the bot mention the team lead'),
 			new Entry(self::CONFIDENTIAL_GROUPS, ValueType::ARRAY, [], definition: 'Zammad groups whose ticket title and customer are not posted into Talk'),
 			new Entry(self::ONLY_UNASSIGNED, ValueType::BOOL, true, definition: 'Whether tickets that an agent already took are skipped'),
 			new Entry(self::RETENTION_DAYS, ValueType::INT, self::DEFAULT_RETENTION_DAYS, definition: 'Days after which sent notifications are cleaned up (minimum 1)'),
