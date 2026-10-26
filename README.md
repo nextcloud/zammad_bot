@@ -71,9 +71,11 @@ Manage → Webhook → New Webhook
 | HTTP Basic Authentication | leave empty |
 | Custom Payload | see below |
 
-Leave HTTP Basic Authentication empty. The endpoint is public and the HMAC
-signature is what authenticates it; credentials there would only be read as a
-Nextcloud login attempt.
+>[!WARNING]
+> **Leave HTTP Basic Authentication empty.** The endpoint is public and the HMAC
+> signature is what authenticates it; credentials there are read as a Nextcloud
+> login attempt, and repeated failures count against Zammad's IP in the
+> brute-force protection until it starts delaying and then rejecting deliveries.
 
 Zammad's default payload does **not** contain the ticket's tags, so the bot has
 nothing to match on. Enable Custom Payload and send the tag as a **literal
@@ -104,17 +106,13 @@ Create one webhook and one trigger per team, each with its own `tag` literal.
 The tag in the payload and the tag in the trigger condition must match, and both
 must match a mapping made with `occ zammad_bot:tag:set`.
 
-!!! Do not use `#{ticket.tag_list}` or `#{ticket.tags}`
-
-    The webhook payload renderer does not resolve them. Zammad sends the
-    placeholder verbatim instead, which the app reports back as
-    `"tags": ["#{ticket.tag_list / no such method}"]` and ignores. The tag has
-    to be a literal.
-
-Leave HTTP Basic Authentication empty. The endpoint is public and the HMAC
-signature is what authenticates it; credentials there are read as a Nextcloud
-login attempt, and repeated failures count against Zammad's IP in the
-brute-force protection until it starts delaying and then rejecting deliveries.
+>[!WARNING]
+> Do not use `#{ticket.tag_list}` or `#{ticket.tags}`
+>
+> The webhook payload renderer does not resolve them. Zammad sends the
+> placeholder verbatim instead, which the app reports back as
+> `"tags": ["#{ticket.tag_list / no such method}"]` and ignores. The tag has
+> to be a literal.
 
 The custom payload also sends far less than the default one, which includes full
 group membership lists and organisation data on every ticket update.
@@ -151,8 +149,8 @@ the Zammad admin documentation:
 > Changing an element which doesn't require an explicit ticket update
 > (e.g. setting a tag) does not necessarily lead to a trigger execution.
 
-This is [zammad#2438](https://github.com/zammad/zammad/issues/2438), open since
-2018. Adding a tag through the tag widget saves over AJAX and will not notify;
+This is [zammad#2438](https://github.com/zammad/zammad/issues/2438), open since 2018.
+Adding a tag through the tag widget saves over AJAX and will not notify;
 setting the tag as part of a ticket update will.
 
 If that matters, add a Zammad **Scheduler** with the same tag condition pointing
