@@ -10,4 +10,4 @@ eaef9ddd2f5552e34c3bc921a48c5e1f phpunit-sqlite.yml
 d1e7dba2e25a3921ba09a8357bcd47c5 psalm-matrix.yml
 2dbec18233063b42f4d8e03bbb43671c reuse.yml
 3688c8c5aa6a98dcd3b5019dcecccddd sync-workflow-templates.yml
-c79dbe3860294a80ca4a77430ca6af99 update-nextcloud-ocp-matrix.yml
+7fc769b5a844b66f6fafe616132d077f update-nextcloud-ocp-matrix.yml
